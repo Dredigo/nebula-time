@@ -21,7 +21,6 @@ Nebula Time es una aplicación web para la gestión del tiempo y la planificaci�
 
 - HTML5 y CSS3 (Tailwind CSS)
 - JavaScript (ES6+)
-- Web Audio API
 - Chart.js
 - FontAwesome 6
 
@@ -38,11 +37,14 @@ Nebula Time es una aplicación web para la gestión del tiempo y la planificaci�
 
 ## Estructura del repositorio
 
-Nebula time/
+```text
+nebulatime/
 ├── .gitignore
 ├── LICENSE
 ├── README.md
 ├── index.html
+├── assets/
+│   └── audio/
 ├── css/
 │   └── styles.css
 └── js/
@@ -50,3 +52,4 @@ Nebula time/
     ├── audio.js
     ├── ui.js
     └── app.js
+```
