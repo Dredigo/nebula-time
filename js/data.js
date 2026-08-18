@@ -2,14 +2,14 @@
    Nebula Time — Data Management & Initial State
    ========================================================================== */
 
-const STORAGE_KEY = 'nebula_time_tasks_v2';
-const NOTES_KEY = 'nebula_time_notes_v2';
-const STREAK_KEY = 'nebula_time_streak_v2';
+const DATA_VERSION = 'v2.3';
 
-// Días de la semana estructurados
+const STORAGE_KEY = `nebula_time_tasks_${DATA_VERSION}`;
+const NOTES_KEY = `nebula_time_notes_${DATA_VERSION}`;
+const STREAK_KEY = `nebula_time_streak_${DATA_VERSION}`;
+
 const DAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 
-// Horario/Calendario inicial por defecto
 const initialSchedule = {
     lunes: [
         { id: 'l1', time: '09:00 – 11:00', title: 'Base de Datos (Teoría)', category: 'bd', icon: 'fa-solid fa-database', color: 'cyan', completed: false },
@@ -45,7 +45,6 @@ const initialSchedule = {
     ]
 };
 
-// Frases y reconocimientos aleatorios al ganar el trofeo del mes
 const TROPHY_QUOTES = [
     "¡Sos un GOAT de la productividad!",
     "¡Nivel Dios alcanzado este mes!",
@@ -54,83 +53,195 @@ const TROPHY_QUOTES = [
     "¡Dominio total del tiempo cósmico!"
 ];
 
-// Estado global de la aplicación
+/* --- Manejo de Fechas Locales y Ayudantes de Sistema --- */
+
+function getTodayDayName() {
+    const daysMap = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    const todayIndex = new Date().getDay();
+    return daysMap[todayIndex];
+}
+
+function getLocalFormattedDate(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getLocalFormattedMonth(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+}
+
+function getDateForDayOfWeek(dayName) {
+    const dayIndex = DAYS.indexOf(dayName.toLowerCase());
+    if (dayIndex === -1) return getLocalFormattedDate();
+
+    const now = new Date();
+    const currentDay = (now.getDay() + 6) % 7; // Lunes = 0, Domingo = 6
+    const diff = dayIndex - currentDay;
+
+    const targetDate = new Date(now);
+    targetDate.setDate(now.getDate() + diff);
+    return getLocalFormattedDate(targetDate);
+}
+
+/* --- Persistencia de Datos --- */
+
+function isStorageAvailable() {
+    try {
+        const testKey = '__storage_test__';
+        localStorage.setItem(testKey, testKey);
+        localStorage.removeItem(testKey);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function loadScheduleData() {
+    if (!isStorageAvailable()) return structuredClone(initialSchedule);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return structuredClone(initialSchedule);
+    try {
+        const parsed = JSON.parse(saved);
+        return DAYS.every(day => Array.isArray(parsed[day])) ? parsed : structuredClone(initialSchedule);
+    } catch (e) {
+        return structuredClone(initialSchedule);
+    }
+}
+
+function saveScheduleData() {
+    if (!isStorageAvailable()) return;
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData.schedule));
+    } catch (e) {
+        console.error("Error guardando agenda:", e);
+    }
+}
+
+function loadNotesData() {
+    if (!isStorageAvailable()) return {};
+    const saved = localStorage.getItem(NOTES_KEY);
+    if (!saved) return {};
+    try {
+        const parsed = JSON.parse(saved);
+        return typeof parsed === 'object' && parsed !== null ? parsed : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveNotesData() {
+    if (!isStorageAvailable()) return;
+    try {
+        localStorage.setItem(NOTES_KEY, JSON.stringify(appData.notes));
+    } catch (e) {
+        console.error("Error guardando notas:", e);
+    }
+}
+
+function loadStreakData() {
+    const currentMonthKey = getLocalFormattedMonth();
+    const defaultStreak = { activeDays: [], monthKey: currentMonthKey, trophyEarned: false, quote: "" };
+
+    if (!isStorageAvailable()) return defaultStreak;
+
+    const saved = localStorage.getItem(STREAK_KEY);
+    if (!saved) return defaultStreak;
+
+    try {
+        const parsed = JSON.parse(saved);
+        if (!parsed || !Array.isArray(parsed.activeDays)) return defaultStreak;
+        
+        // Filtramos días pertenecientes únicamente al mes activo
+        const validDays = parsed.monthKey === currentMonthKey 
+            ? parsed.activeDays 
+            : parsed.activeDays.filter(d => d.startsWith(currentMonthKey));
+
+        return {
+            activeDays: validDays,
+            monthKey: currentMonthKey,
+            trophyEarned: validDays.length >= 20,
+            quote: parsed.quote || ""
+        };
+    } catch (e) {
+        return defaultStreak;
+    }
+}
+
+function saveStreakData() {
+    if (!isStorageAvailable()) return;
+    try {
+        localStorage.setItem(STREAK_KEY, JSON.stringify(appData.streak));
+    } catch (e) {
+        console.error("Error guardando racha:", e);
+    }
+}
+
+/* --- Estado Global --- */
+
 let appData = {
     schedule: loadScheduleData(),
     notes: loadNotesData(),
     streak: loadStreakData()
 };
 
-/* --- Carga y guardado de datos --- */
+/* --- Algoritmo Dinámico de Auditoría de Rachas --- */
 
-function loadScheduleData() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return initialSchedule;
-    try {
-        return JSON.parse(saved);
-    } catch (e) {
-        console.error("Error al cargar horario desde localStorage", e);
-        return initialSchedule;
+function evaluateDayCompletion(dayName) {
+    const tasks = appData.schedule[dayName] || [];
+    if (tasks.length === 0) return;
+
+    const is100PercentCompleted = tasks.every(task => task.completed === true);
+    const dateStr = getDateForDayOfWeek(dayName);
+
+    if (!Array.isArray(appData.streak.activeDays)) {
+        appData.streak.activeDays = [];
     }
-}
 
-function saveScheduleData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData.schedule));
-}
+    const index = appData.streak.activeDays.indexOf(dateStr);
 
-function loadNotesData() {
-    const saved = localStorage.getItem(NOTES_KEY);
-    if (!saved) return {};
-    try {
-        return JSON.parse(saved);
-    } catch (e) {
-        console.error("Error al cargar notas desde localStorage", e);
-        return {};
-    }
-}
-
-function saveNotesData() {
-    localStorage.setItem(NOTES_KEY, JSON.stringify(appData.notes));
-}
-
-function loadStreakData() {
-    const saved = localStorage.getItem(STREAK_KEY);
-    const currentMonthKey = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-    
-    if (!saved) {
-        return { activeDays: [], monthKey: currentMonthKey, trophyEarned: false, quote: "" };
-    }
-    
-    try {
-        const parsed = JSON.parse(saved);
-        // Si cambió el mes, resetear días activos del mes actual
-        if (parsed.monthKey !== currentMonthKey) {
-            return { activeDays: [], monthKey: currentMonthKey, trophyEarned: false, quote: "" };
+    if (is100PercentCompleted) {
+        if (index === -1) {
+            appData.streak.activeDays.push(dateStr);
         }
-        return parsed;
-    } catch (e) {
-        return { activeDays: [], monthKey: currentMonthKey, trophyEarned: false, quote: "" };
-    }
-}
-
-function saveStreakData() {
-    localStorage.setItem(STREAK_KEY, JSON.stringify(appData.streak));
-}
-
-/* --- Métodos auxiliares de actualización de estado --- */
-
-function recordDailyActivity() {
-    const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-    if (!appData.streak.activeDays.includes(todayStr)) {
-        appData.streak.activeDays.push(todayStr);
-        
-        // Si alcanza los 20 días activos en el mes, desbloquea trofeo
-        if (appData.streak.activeDays.length >= 20 && !appData.streak.trophyEarned) {
-            appData.streak.trophyEarned = true;
-            const randomQuote = TROPHY_QUOTES[Math.floor(Math.random() * TROPHY_QUOTES.length)];
-            appData.streak.quote = randomQuote;
+    } else {
+        if (index !== -1) {
+            appData.streak.activeDays.splice(index, 1);
         }
-        
-        saveStreakData();
     }
+
+    if (appData.streak.activeDays.length >= 20) {
+        appData.streak.trophyEarned = true;
+        if (!appData.streak.quote) {
+            appData.streak.quote = TROPHY_QUOTES[Math.floor(Math.random() * TROPHY_QUOTES.length)];
+        }
+    } else {
+        appData.streak.trophyEarned = false;
+    }
+
+    saveStreakData();
+}
+
+function syncWeeklyStreak() {
+    DAYS.forEach(day => evaluateDayCompletion(day));
+}
+
+function resetAppData() {
+    appData.schedule = structuredClone(initialSchedule);
+    appData.notes = {};
+    appData.streak = { activeDays: [], monthKey: getLocalFormattedMonth(), trophyEarned: false, quote: "" };
+    saveScheduleData();
+    saveNotesData();
+    saveStreakData();
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        STORAGE_KEY, NOTES_KEY, STREAK_KEY, DAYS, initialSchedule, TROPHY_QUOTES,
+        appData, getTodayDayName, loadScheduleData, saveScheduleData, loadNotesData, saveNotesData,
+        loadStreakData, saveStreakData, evaluateDayCompletion, syncWeeklyStreak, resetAppData
+    };
 }

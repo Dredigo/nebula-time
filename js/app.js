@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Nebula Time — Main Application Controller & Event Handlers
+   Nebula Time — Main Controller (Con Validación de Día y Modales Blindados)
    ========================================================================== */
 
 let pomodoroTimer = null;
@@ -10,10 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initClock();
     renderSchedule();
     updateLiveBanner();
-    setInterval(updateLiveBanner, 30000); // Actualiza banner cada 30 seg
+    setInterval(updateLiveBanner, 30000);
 });
 
-/* --- Reloj en Tiempo Real y Fecha --- */
+/* --- Reloj e Indicadores --- */
 
 function initClock() {
     function tick() {
@@ -32,15 +32,13 @@ function initClock() {
     setInterval(tick, 1000);
 }
 
-/* --- Banner de Actividad En Curso --- */
-
 function updateLiveBanner() {
     const banner = document.getElementById('live-banner');
     const bannerText = document.getElementById('live-banner-text');
     if (!banner || !bannerText) return;
 
-    const todayKey = getTodayDayName();
-    const todayTasks = appData.schedule[todayKey] || [];
+    const todayKey = typeof getTodayDayName === 'function' ? getTodayDayName() : 'lunes';
+    const todayTasks = (appData && appData.schedule) ? (appData.schedule[todayKey] || []) : [];
 
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -48,7 +46,6 @@ function updateLiveBanner() {
     let currentTask = null;
 
     todayTasks.forEach(task => {
-        // Intentar parsear el horario "HH:MM – HH:MM"
         const parts = task.time.split('–').map(s => s.trim());
         if (parts.length === 2) {
             const [startH, startM] = parts[0].split(':').map(Number);
@@ -86,42 +83,69 @@ function updateLiveBanner() {
     }
 }
 
-/* --- Gestión de Tareas (Completar, Eliminar, Crear, Editar) --- */
+/* --- Gestión de Tareas con Bloqueo y Blindaje de Modales --- */
 
 function toggleTaskComplete(dayKey, taskId) {
+    const todayKey = getTodayDayName();
+    // Bloqueo de seguridad: Evita la ejecución si el día no coincide con la fecha de hoy
+    if (dayKey !== todayKey) {
+        showCustomDialog('Día Bloqueado', 'Sólo podés tildar o destildar las actividades del día de hoy.');
+        return;
+    }
+
     const list = appData.schedule[dayKey] || [];
     const task = list.find(t => t.id === taskId);
-    if (task) {
-        task.completed = !task.completed;
-        if (task.completed) {
-            recordDailyActivity();
-            if (typeof confetti === 'function') {
-                confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-            }
-        }
-        saveScheduleData();
-        renderSchedule();
-        updateLiveBanner();
+    if (!task) return;
+
+    task.completed = !task.completed;
+
+    if (task.completed && typeof confetti === 'function') {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
     }
+
+    saveScheduleData();
+    evaluateDayCompletion(dayKey);
+    renderSchedule();
+    updateLiveBanner();
 }
 
 function deleteTask(dayKey, taskId) {
     showCustomDialog('¿Eliminar actividad?', 'Esta acción quitará el elemento del horario.', () => {
         appData.schedule[dayKey] = (appData.schedule[dayKey] || []).filter(t => t.id !== taskId);
         delete appData.notes[taskId];
+
         saveScheduleData();
         saveNotesData();
+        evaluateDayCompletion(dayKey);
+
         renderSchedule();
         updateLiveBanner();
     });
 }
 
+function openTaskModal() {
+    const today = typeof getTodayDayName === 'function' ? getTodayDayName() : 'lunes';
+    openTaskModalForDay(today);
+}
+
 function openTaskModalForDay(dayKey) {
     currentEditingTaskId = null;
-    document.getElementById('task-modal-title').innerText = 'Nueva Actividad';
-    document.getElementById('task-form').reset();
-    document.getElementById('form-day').value = dayKey;
-    document.getElementById('task-modal').classList.remove('hidden');
+    
+    const modal = document.getElementById('task-modal');
+    const title = document.getElementById('task-modal-title');
+    const form = document.getElementById('task-form');
+    const formDay = document.getElementById('form-day');
+
+    if (!modal) {
+        console.error("No se encontró el elemento #task-modal en el DOM.");
+        return;
+    }
+
+    if (title) title.innerText = 'Nueva Actividad';
+    if (form) form.reset();
+    if (formDay) formDay.value = dayKey || 'lunes';
+
+    modal.classList.remove('hidden');
 }
 
 function editTaskModal(dayKey, taskId) {
@@ -129,41 +153,63 @@ function editTaskModal(dayKey, taskId) {
     if (!task) return;
 
     currentEditingTaskId = taskId;
-    document.getElementById('task-modal-title').innerText = 'Editar Actividad';
-    document.getElementById('form-day').value = dayKey;
-    document.getElementById('form-title').value = task.title;
-    document.getElementById('form-time').value = task.time;
-    document.getElementById('form-icon-class').value = task.icon || 'fa-solid fa-database';
-    document.getElementById('form-category').value = task.category || 'bd';
-    document.getElementById('form-color').value = task.color || 'cyan';
 
-    document.getElementById('task-modal').classList.remove('hidden');
+    const modal = document.getElementById('task-modal');
+    const title = document.getElementById('task-modal-title');
+    const formDay = document.getElementById('form-day');
+    const formTitle = document.getElementById('form-title');
+    const formTime = document.getElementById('form-time');
+    const formIcon = document.getElementById('form-icon-class');
+    const formCat = document.getElementById('form-category');
+    const formColor = document.getElementById('form-color');
+
+    if (!modal) return;
+
+    if (title) title.innerText = 'Editar Actividad';
+    if (formDay) formDay.value = dayKey;
+    if (formTitle) formTitle.value = task.title || '';
+    if (formTime) formTime.value = task.time || '';
+    if (formIcon) formIcon.value = task.icon || 'fa-solid fa-database';
+    if (formCat) formCat.value = task.category || 'bd';
+    if (formColor) formColor.value = task.color || 'cyan';
+
+    modal.classList.remove('hidden');
 }
 
 function closeTaskModal() {
-    document.getElementById('task-modal').classList.add('hidden');
+    const modal = document.getElementById('task-modal');
+    if (modal) modal.classList.add('hidden');
 }
 
 function saveTask(event) {
-    event.preventDefault();
-    const day = document.getElementById('form-day').value;
-    const title = document.getElementById('form-title').value.trim();
-    const time = document.getElementById('form-time').value.trim();
-    const icon = document.getElementById('form-icon-class').value;
-    const category = document.getElementById('form-category').value;
-    const color = document.getElementById('form-color').value;
+    if (event) event.preventDefault();
+
+    const formDay = document.getElementById('form-day');
+    const formTitle = document.getElementById('form-title');
+    const formTime = document.getElementById('form-time');
+    const formIcon = document.getElementById('form-icon-class');
+    const formCat = document.getElementById('form-category');
+    const formColor = document.getElementById('form-color');
+
+    const day = formDay ? formDay.value : 'lunes';
+    const title = formTitle ? formTitle.value.trim() : '';
+    const time = formTime ? formTime.value.trim() : '';
+    const icon = formIcon ? formIcon.value : 'fa-solid fa-clock';
+    const category = formCat ? formCat.value : 'bd';
+    const color = formColor ? formColor.value : 'cyan';
+
+    if (!title) return;
 
     if (currentEditingTaskId) {
-        // Actualizar existente
         DAYS.forEach(d => {
             appData.schedule[d] = (appData.schedule[d] || []).filter(t => t.id !== currentEditingTaskId);
         });
+        if (!appData.schedule[day]) appData.schedule[day] = [];
         appData.schedule[day].push({
             id: currentEditingTaskId,
             title, time, icon, category, color, completed: false
         });
     } else {
-        // Crear nuevo
         const newId = 'task_' + Date.now();
         if (!appData.schedule[day]) appData.schedule[day] = [];
         appData.schedule[day].push({
@@ -173,12 +219,13 @@ function saveTask(event) {
     }
 
     saveScheduleData();
+    evaluateDayCompletion(day);
     closeTaskModal();
     renderSchedule();
     updateLiveBanner();
 }
 
-/* --- Gestión de Notas y Subtareas --- */
+/* --- Modales de Notas y Subtareas --- */
 
 function saveNotesModal() {
     if (!currentActiveNoteId) return;
@@ -186,7 +233,9 @@ function saveNotesModal() {
         appData.notes[currentActiveNoteId] = { text: '', subtasks: [], links: [] };
     }
 
-    appData.notes[currentActiveNoteId].text = document.getElementById('note-text-area').value;
+    const noteArea = document.getElementById('note-text-area');
+    if (noteArea) appData.notes[currentActiveNoteId].text = noteArea.value;
+
     saveNotesData();
     closeNotesModal();
 }
@@ -236,8 +285,8 @@ function addResourceLink() {
     }
 
     appData.notes[currentActiveNoteId].links.push({ title: title || url, url });
-    titleInput.value = '';
-    urlInput.value = '';
+    if (titleInput) titleInput.value = '';
+    if (urlInput) urlInput.value = '';
     saveNotesData();
     renderNoteLinks(appData.notes[currentActiveNoteId].links);
 }
@@ -249,7 +298,7 @@ function removeResourceLink(idx) {
     renderNoteLinks(appData.notes[currentActiveNoteId].links);
 }
 
-/* --- Temporizador Pomodoro --- */
+/* --- Pomodoro --- */
 
 function startPomodoroForTask(taskId) {
     let foundTask = null;
@@ -258,23 +307,31 @@ function startPomodoroForTask(taskId) {
         if (match) foundTask = match;
     });
 
+    const pomoSubj = document.getElementById('pomo-subject');
+    const pomoTitle = document.getElementById('pomo-title');
+
     if (foundTask) {
-        document.getElementById('pomo-subject').innerText = foundTask.category.toUpperCase();
-        document.getElementById('pomo-title').innerText = foundTask.title;
+        if (pomoSubj) pomoSubj.innerText = (foundTask.category || '').toUpperCase();
+        if (pomoTitle) pomoTitle.innerText = foundTask.title;
     }
 
-    renderAmbientMixerGrid();
-    document.getElementById('pomodoro-modal').classList.remove('hidden');
+    renderAmbientMixer();
+    const modal = document.getElementById('pomodoro-modal');
+    if (modal) modal.classList.remove('hidden');
 }
 
 function closePomodoro() {
     clearInterval(pomodoroTimer);
     isPomodoroRunning = false;
-    document.getElementById('pomo-start-btn').innerText = 'Iniciar';
-    document.getElementById('pomodoro-modal').classList.add('hidden');
+    const btn = document.getElementById('pomo-start-btn');
+    if (btn) btn.innerText = 'Iniciar';
+    const modal = document.getElementById('pomodoro-modal');
+    if (modal) modal.classList.add('hidden');
 }
 
 function togglePomodoroTimer() {
+    if (typeof getAudioContext === 'function') getAudioContext();
+
     const btn = document.getElementById('pomo-start-btn');
     if (isPomodoroRunning) {
         clearInterval(pomodoroTimer);
@@ -290,11 +347,9 @@ function togglePomodoroTimer() {
             } else {
                 clearInterval(pomodoroTimer);
                 isPomodoroRunning = false;
-                playPomodoroChime();
+                if (typeof playPomodoroChime === 'function') playPomodoroChime();
                 if (btn) btn.innerText = 'Iniciar';
-                if (typeof confetti === 'function') {
-                    confetti({ particleCount: 100, spread: 80 });
-                }
+                if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 80 });
             }
         }, 1000);
     }
@@ -317,79 +372,51 @@ function updatePomodoroDisplay() {
     if (display) display.innerText = str;
 }
 
-function renderAmbientMixerGrid() {
-    const container = document.getElementById('ambient-mixer-grid');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const tracks = [
-        { key: 'rain', label: '🌧️ Lluvia' },
-        { key: 'waves', label: '🌊 Océano' },
-        { key: 'forest', label: '🌲 Bosque' },
-        { key: 'fire', label: '🔥 Fogata' },
-        { key: 'lofi', label: '🎧 Lo-Fi Beats' }
-    ];
-
-    tracks.forEach(tr => {
-        const div = document.createElement('div');
-        div.className = 'flex items-center justify-between bg-gray-900/60 p-2 rounded-xl border border-gray-800';
-        div.innerHTML = `
-            <span class="text-gray-300 text-[11px] font-medium">${tr.label}</span>
-            <button onclick="handleAmbientToggle('${tr.key}', this)" class="px-2 py-1 bg-gray-800 hover:bg-purple-600 text-gray-300 rounded-lg text-[10px] transition-all">
-                Activar
-            </button>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function handleAmbientToggle(key, btnElem) {
-    const isPlaying = toggleAmbientSound(key);
-    if (isPlaying) {
-        btnElem.innerText = 'Sonando';
-        btnElem.className = 'px-2 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold shadow-sm';
-    } else {
-        btnElem.innerText = 'Activar';
-        btnElem.className = 'px-2 py-1 bg-gray-800 hover:bg-purple-600 text-gray-300 rounded-lg text-[10px] transition-all';
-    }
-}
-
-/* --- Estadísticas y Gamificación --- */
+/* --- Gamificación y Estadísticas --- */
 
 function openStatsModal() {
     renderStatsChart();
-    document.getElementById('stats-modal').classList.remove('hidden');
+    const modal = document.getElementById('stats-modal');
+    if (modal) modal.classList.remove('hidden');
 }
 
 function closeStatsModal() {
-    document.getElementById('stats-modal').classList.add('hidden');
+    const modal = document.getElementById('stats-modal');
+    if (modal) modal.classList.add('hidden');
 }
 
 function openGamificationModal() {
     const monthName = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
-    document.getElementById('current-month-name').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    const monthElem = document.getElementById('current-month-name');
+    if (monthElem) monthElem.innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
 
-    const activeCount = appData.streak.activeDays.length;
-    document.getElementById('streak-days-badge').innerText = `${activeCount} días`;
+    const activeCount = appData.streak && appData.streak.activeDays ? appData.streak.activeDays.length : 0;
+    const badge = document.getElementById('streak-days-badge');
+    if (badge) badge.innerText = `${activeCount} días`;
 
     const percent = Math.min(100, Math.round((activeCount / 20) * 100));
-    document.getElementById('streak-progress-bar').style.width = `${percent}%`;
-    document.getElementById('streak-percent-text').innerText = `${percent}%`;
+    const pBar = document.getElementById('streak-progress-bar');
+    const pText = document.getElementById('streak-percent-text');
+    if (pBar) pBar.style.width = `${percent}%`;
+    if (pText) pText.innerText = `${percent}%`;
 
     const trophyCard = document.getElementById('trophy-awarded-card');
-    if (appData.streak.trophyEarned) {
-        trophyCard.classList.remove('hidden');
-        document.getElementById('trophy-quote-display').innerText = `"${appData.streak.quote || '¡Excelente disciplina!'}"`;
+    if (appData.streak && appData.streak.trophyEarned) {
+        if (trophyCard) trophyCard.classList.remove('hidden');
+        const quoteElem = document.getElementById('trophy-quote-display');
+        if (quoteElem) quoteElem.innerText = `"${appData.streak.quote || '¡Excelente disciplina!'}"`;
     } else {
-        trophyCard.classList.add('hidden');
+        if (trophyCard) trophyCard.classList.add('hidden');
     }
 
     renderTrophiesShelf();
-    document.getElementById('gamification-modal').classList.remove('hidden');
+    const modal = document.getElementById('gamification-modal');
+    if (modal) modal.classList.remove('hidden');
 }
 
 function closeGamificationModal() {
-    document.getElementById('gamification-modal').classList.add('hidden');
+    const modal = document.getElementById('gamification-modal');
+    if (modal) modal.classList.add('hidden');
 }
 
 function renderTrophiesShelf() {
@@ -397,10 +424,12 @@ function renderTrophiesShelf() {
     if (!container) return;
     container.innerHTML = '';
 
+    const activeCount = appData.streak && appData.streak.activeDays ? appData.streak.activeDays.length : 0;
+
     const badges = [
-        { name: 'Cero Procrastinación', icon: '⚡', unlocked: appData.streak.activeDays.length >= 5 },
-        { name: 'Constancia Nebular', icon: '🔥', unlocked: appData.streak.activeDays.length >= 10 },
-        { name: 'Leyenda del Mes', icon: '🏆', unlocked: appData.streak.trophyEarned }
+        { name: 'Cero Procrastinación', icon: '⚡', unlocked: activeCount >= 5 },
+        { name: 'Constancia Nebular', icon: '🔥', unlocked: activeCount >= 10 },
+        { name: 'Leyenda del Mes', icon: '🏆', unlocked: !!(appData.streak && appData.streak.trophyEarned) }
     ];
 
     badges.forEach(b => {
@@ -419,14 +448,16 @@ function renderTrophiesShelf() {
     });
 }
 
-/* --- Respaldo y Temas --- */
+/* --- Respaldo y Reinicio Semanal --- */
 
 function openBackupModal() {
-    document.getElementById('backup-modal').classList.remove('hidden');
+    const modal = document.getElementById('backup-modal');
+    if (modal) modal.classList.remove('hidden');
 }
 
 function closeBackupModal() {
-    document.getElementById('backup-modal').classList.add('hidden');
+    const modal = document.getElementById('backup-modal');
+    if (modal) modal.classList.add('hidden');
 }
 
 function exportDataJSON() {
@@ -464,7 +495,7 @@ function importDataJSON(event) {
 }
 
 function confirmResetWeek() {
-    showCustomDialog('Reiniciar Marcas Semanales', '¿Deseas desmarcar todas las actividades como completadas?', () => {
+    showCustomDialog('Reiniciar Marcas Semanales', '¿Deseas desmarcar todas las actividades para la nueva semana? La racha ganada anteriormente se mantendrá intacta.', () => {
         DAYS.forEach(d => {
             (appData.schedule[d] || []).forEach(t => t.completed = false);
         });
@@ -478,11 +509,7 @@ function toggleTheme() {
     document.body.classList.toggle('light-theme');
     const icon = document.getElementById('theme-icon');
     if (icon) {
-        if (document.body.classList.contains('light-theme')) {
-            icon.className = 'fa-solid fa-sun';
-        } else {
-            icon.className = 'fa-solid fa-moon';
-        }
+        icon.className = document.body.classList.contains('light-theme') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     }
 }
 
@@ -490,51 +517,45 @@ function toggleNotifications() {
     if ('Notification' in window) {
         Notification.requestPermission().then(perm => {
             if (perm === 'granted') {
-                new Notification('Nebula Time', { body: '¡Notificaciones del sistema activadas correctamente!' });
+                new Notification('Nebula Time', { body: 'Notificaciones activadas correctamente.' });
             }
         });
     }
 }
 
 function triggerNebulaEffect() {
+    if (typeof getAudioContext === 'function') getAudioContext();
+    if (typeof playPomodoroChime === 'function') playPomodoroChime();
     if (typeof confetti === 'function') {
-        confetti({
-            particleCount: 80,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 }
-        });
-        confetti({
-            particleCount: 80,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 }
-        });
+        confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0 } });
+        confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1 } });
     }
 }
-
-/* --- Diálogo Personalizado (Sustituto de alert/confirm) --- */
 
 function showCustomDialog(title, message, onConfirm = null) {
     const modal = document.getElementById('custom-dialog-modal');
     if (!modal) return;
 
-    document.getElementById('dialog-title').innerText = title;
-    document.getElementById('dialog-message').innerText = message;
+    const tElem = document.getElementById('dialog-title');
+    const mElem = document.getElementById('dialog-message');
+    if (tElem) tElem.innerText = title;
+    if (mElem) mElem.innerText = message;
 
     const okBtn = document.getElementById('dialog-ok-btn');
     const cancelBtn = document.getElementById('dialog-cancel-btn');
 
     if (onConfirm) {
-        cancelBtn.classList.remove('hidden');
-        okBtn.onclick = () => {
-            modal.classList.add('hidden');
-            onConfirm();
-        };
-        cancelBtn.onclick = () => modal.classList.add('hidden');
+        if (cancelBtn) cancelBtn.classList.remove('hidden');
+        if (okBtn) {
+            okBtn.onclick = () => {
+                modal.classList.add('hidden');
+                onConfirm();
+            };
+        }
+        if (cancelBtn) cancelBtn.onclick = () => modal.classList.add('hidden');
     } else {
-        cancelBtn.classList.add('hidden');
-        okBtn.onclick = () => modal.classList.add('hidden');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        if (okBtn) okBtn.onclick = () => modal.classList.add('hidden');
     }
 
     modal.classList.remove('hidden');
