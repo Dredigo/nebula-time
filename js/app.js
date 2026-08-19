@@ -7,14 +7,46 @@ let pomodoroSecondsLeft = 25 * 60;
 let isPomodoroRunning = false;
 let splashStarted = false;
 
+const THEME_KEY = 'nebula_time_theme_v1';
+
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     initClock();
     renderSchedule();
     updateLiveBanner();
     setInterval(updateLiveBanner, 30000);
 });
 
-/* --- Intro estilo Netflix Interactivable (Garantiza Sonido y Marca Visible) --- */
+/* --- Persistencia y carga del tema --- */
+
+function initTheme() {
+    try {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === 'light') {
+            document.body.classList.add('light-theme');
+            const icon = document.getElementById('theme-icon');
+            if (icon) icon.className = 'fa-solid fa-sun';
+        }
+    } catch (e) {
+        // silencioso
+    }
+}
+
+function toggleTheme() {
+    document.body.classList.toggle('light-theme');
+    const isLight = document.body.classList.contains('light-theme');
+    const icon = document.getElementById('theme-icon');
+    if (icon) {
+        icon.className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    }
+    try {
+        localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
+    } catch (e) {
+        console.warn('No se pudo persistir el tema:', e);
+    }
+}
+
+/* --- Intro estilo Netflix Interactivable --- */
 
 function startNebulaExperience() {
     if (splashStarted) return;
@@ -26,19 +58,16 @@ function startNebulaExperience() {
     const audio = document.getElementById('intro-audio');
     const btnTrigger = document.getElementById('splash-btn-trigger');
 
-    // 1. Ocultar únicamente el botón "Toca para iniciar"
     if (btnTrigger) {
         btnTrigger.classList.add('opacity-0', 'pointer-events-none');
     }
 
-    // 2. Desbloquear y reproducir el audio con volumen al máximo
     if (audio) {
         audio.volume = 1.0;
         audio.currentTime = 0;
         audio.play().catch(err => console.log("Error al reproducir audio:", err));
     }
 
-    // 3. Encender y reproducir el video cinemático
     if (video) {
         video.classList.remove('opacity-0');
         video.playbackRate = 1.0;
@@ -56,7 +85,6 @@ function startNebulaExperience() {
 
     if (overlay) overlay.classList.remove('opacity-0');
 
-    // Fallback de tiempo máximo por si el video no dispara evento de fin
     const timeoutId = setTimeout(() => {
         hideSplash();
     }, 4500);
@@ -155,6 +183,7 @@ function toggleTaskComplete(dayKey, taskId) {
     const task = list.find(t => t.id === taskId);
     if (!task) return;
 
+    const wasCompleted = task.completed;
     task.completed = !task.completed;
 
     if (task.completed && typeof confetti === 'function') {
@@ -164,6 +193,18 @@ function toggleTaskComplete(dayKey, taskId) {
     saveScheduleData();
     evaluateDayCompletion(dayKey);
     renderSchedule();
+
+    // Feedback visual inmediato: animación de “just-completed”
+    if (task.completed && !wasCompleted) {
+        requestAnimationFrame(() => {
+            const card = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (card) {
+                card.classList.add('just-completed');
+                setTimeout(() => card.classList.remove('just-completed'), 600);
+            }
+        });
+    }
+
     updateLiveBanner();
 }
 
@@ -558,14 +599,6 @@ function confirmResetWeek() {
         renderSchedule();
         closeBackupModal();
     });
-}
-
-function toggleTheme() {
-    document.body.classList.toggle('light-theme');
-    const icon = document.getElementById('theme-icon');
-    if (icon) {
-        icon.className = document.body.classList.contains('light-theme') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-    }
 }
 
 function toggleNotifications() {

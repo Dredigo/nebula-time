@@ -18,22 +18,400 @@ body {
     overflow-x: hidden;
 }
 
-/* Modo claro (toggle opcional) */
+/* ==========================================================================
+   MODO DÍA — Solar Noir / Argentina Modern
+   La intención no es un "modo blanco": es un tema luminoso visualmente,
+   pero con tonos profundos y saturados para evitar el efecto de pantalla
+   blanca que cansaba la vista.
+   ========================================================================== */
 body.light-theme {
-    background-color: #f1f5f9;
-    color: #0f172a;
-}
-body.light-theme .glass-panel {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(203, 213, 225, 0.8);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
-}
-body.light-theme .task-card {
-    background: #ffffff;
-    border-color: #e2e8f0;
+    --light-bg-start: #111827;
+    --light-bg-end: #1b2433;
+    --light-surface: rgba(24, 33, 49, 0.88);
+    --light-surface-solid: #1b2536;
+    --light-surface-deep: #151e2d;
+    --light-border: rgba(148, 163, 184, 0.16);
+    --light-text-primary: #f1f5f9;
+    --light-text-secondary: #a9b7c9;
+    --light-text-muted: #75849a;
+    --light-accent: #e63946;
+    --light-accent-soft: rgba(230, 57, 70, 0.15);
+    --light-sky: #67c7ee;
+    --light-sky-soft: rgba(103, 199, 238, 0.14);
+    --light-gold: #f2c14e;
+    --light-shadow: 0 10px 28px rgba(3, 8, 18, 0.28), 0 2px 8px rgba(3, 8, 18, 0.20);
+    --light-shadow-hover: 0 18px 42px rgba(2, 6, 15, 0.38), 0 8px 18px rgba(230, 57, 70, 0.10);
+
+    background:
+        radial-gradient(circle at 8% 10%, rgba(103, 199, 238, 0.10), transparent 28%),
+        radial-gradient(circle at 92% 88%, rgba(230, 57, 70, 0.11), transparent 30%),
+        linear-gradient(135deg, var(--light-bg-start), var(--light-bg-end));
+    color: var(--light-text-primary);
 }
 
-/* Paneles de cristal con desenfoque */
+/* Pequeño brillo ambiental: profundidad sin convertir el fondo en una feria. */
+body.light-theme .nebula-orb {
+    opacity: 0.14;
+    filter: blur(110px);
+}
+body.light-theme .orb-1 { background: #3aaed8; }
+body.light-theme .orb-2 { background: #e63946; }
+body.light-theme .orb-3 { background: #f2c14e; }
+
+/* Paneles principales: vidrio oscuro, no blanco. */
+body.light-theme .glass-panel {
+    background: linear-gradient(145deg, rgba(29, 40, 58, 0.92), rgba(18, 27, 41, 0.90));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--light-border);
+    box-shadow: var(--light-shadow);
+}
+
+/* Línea de luz superior para dar sensación de volumen. */
+body.light-theme .glass-panel {
+    position: relative;
+    overflow: hidden;
+}
+body.light-theme .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 12% auto 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    pointer-events: none;
+}
+
+/* Header */
+body.light-theme header.glass-panel,
+body.light-theme .sticky {
+    background: linear-gradient(135deg, rgba(18, 27, 41, 0.96), rgba(29, 40, 58, 0.94));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(103, 199, 238, 0.16);
+    box-shadow: 0 8px 28px rgba(3, 8, 18, 0.30);
+}
+
+/* Título / identidad visual */
+body.light-theme h1,
+body.light-theme .font-display {
+    color: #f8fafc;
+}
+body.light-theme #current-time-display {
+    color: #ffffff !important;
+    font-weight: 800;
+    text-shadow: 0 0 22px rgba(103, 199, 238, 0.22);
+}
+body.light-theme #today-name-display {
+    color: var(--light-sky) !important;
+    font-weight: 700;
+}
+
+/* ======================================================================
+   TARJETAS — efecto de "objeto" elevado
+   ====================================================================== */
+body.light-theme .task-card {
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(145deg, #202c40, #172133);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 16px;
+    box-shadow:
+        0 8px 18px rgba(2, 6, 15, 0.22),
+        inset 0 1px 0 rgba(255,255,255,0.055),
+        inset 0 -1px 0 rgba(0,0,0,0.20);
+    transition: transform 0.28s cubic-bezier(0.2, 0.75, 0.25, 1),
+                box-shadow 0.28s ease,
+                border-color 0.28s ease;
+    color: var(--light-text-primary);
+}
+
+/* Reflejo diagonal muy sutil. */
+body.light-theme .task-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -35%;
+    width: 45%;
+    height: 100%;
+    transform: skewX(-22deg);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.035), transparent);
+    pointer-events: none;
+    z-index: -1;
+}
+
+body.light-theme .task-card:hover {
+    transform: translateY(-5px) scale(1.008);
+    border-color: rgba(103, 199, 238, 0.32);
+    box-shadow: var(--light-shadow-hover);
+}
+
+/* Franja inferior de cada materia. */
+body.light-theme .task-card .border-t {
+    background: rgba(7, 13, 23, 0.24);
+    border-top-color: rgba(148, 163, 184, 0.11) !important;
+    border-radius: 0 0 14px 14px;
+    padding: 0.28rem 0.75rem;
+    margin: 0 -0.75rem -0.75rem;
+}
+
+/* ======================================================================
+   MATERIAS — colores intensos, pero controlados
+   ====================================================================== */
+body.light-theme .task-card.border-neon-cyan {
+    background: linear-gradient(145deg, #182b3a, #152332 68%, #14202e);
+    border-left: 4px solid #45c2ec !important;
+}
+body.light-theme .task-card.border-neon-cyan .border-t {
+    background: rgba(69, 194, 236, 0.12);
+}
+
+body.light-theme .task-card.border-neon-amber {
+    background: linear-gradient(145deg, #302a1f, #25251f 68%, #20221f);
+    border-left: 4px solid #f2b84b !important;
+}
+body.light-theme .task-card.border-neon-amber .border-t {
+    background: rgba(242, 184, 75, 0.12);
+}
+
+body.light-theme .task-card.border-neon-emerald {
+    background: linear-gradient(145deg, #1b302b, #192821 68%, #17231f);
+    border-left: 4px solid #36c99a !important;
+}
+body.light-theme .task-card.border-neon-emerald .border-t {
+    background: rgba(54, 201, 154, 0.12);
+}
+
+body.light-theme .task-card.border-neon-indigo {
+    background: linear-gradient(145deg, #222745, #1c2139 68%, #191f32);
+    border-left: 4px solid #7884ff !important;
+}
+body.light-theme .task-card.border-neon-indigo .border-t {
+    background: rgba(120, 132, 255, 0.12);
+}
+
+body.light-theme .task-card.border-neon-purple {
+    background: linear-gradient(145deg, #2d2541, #241f35 68%, #211b2f);
+    border-left: 4px solid #b084ff !important;
+}
+body.light-theme .task-card.border-neon-purple .border-t {
+    background: rgba(176, 132, 255, 0.12);
+}
+
+body.light-theme .task-card.border-neon-rose {
+    background: linear-gradient(145deg, #38242b, #2d2027 68%, #291d24);
+    border-left: 4px solid #ff5c70 !important;
+}
+body.light-theme .task-card.border-neon-rose .border-t {
+    background: rgba(255, 92, 112, 0.12);
+}
+
+body.light-theme .task-card.border-neon-pink {
+    background: linear-gradient(145deg, #36243a, #2a1e31 68%, #251a2b);
+    border-left: 4px solid #f26bc2 !important;
+}
+body.light-theme .task-card.border-neon-pink .border-t {
+    background: rgba(242, 107, 194, 0.12);
+}
+
+/* Títulos y metadatos */
+body.light-theme .task-card .task-title {
+    color: #f8fafc !important;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.16);
+}
+body.light-theme .task-card .text-gray-400,
+body.light-theme .task-card .text-slate-400,
+body.light-theme .task-card .text-slate-300 {
+    color: #aebbd0 !important;
+}
+
+/* Estado completado: apagado pero todavía visible. */
+body.light-theme .task-card.completed {
+    opacity: 0.58;
+    filter: saturate(0.55);
+    background: linear-gradient(145deg, #182131, #151c29) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.16);
+}
+body.light-theme .task-card.completed .task-title {
+    text-decoration-color: #36c99a;
+}
+
+/* Días bloqueados. */
+body.light-theme .glass-panel.opacity-75 {
+    opacity: 0.92 !important;
+    background: linear-gradient(145deg, rgba(18, 27, 41, 0.82), rgba(13, 20, 31, 0.80)) !important;
+    border-color: rgba(148, 163, 184, 0.11) !important;
+}
+body.light-theme .glass-panel.opacity-75 .task-card {
+    background: #182131 !important;
+    border-color: rgba(148, 163, 184, 0.09) !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.14) !important;
+    opacity: 0.72 !important;
+    filter: grayscale(0.30) !important;
+}
+body.light-theme .glass-panel.opacity-75 .task-title {
+    color: #75849a !important;
+}
+
+/* Textos generales heredados de Tailwind. */
+body.light-theme .text-gray-400,
+body.light-theme .text-gray-300,
+body.light-theme .text-gray-500,
+body.light-theme .text-slate-400,
+body.light-theme .text-slate-300 {
+    color: var(--light-text-secondary) !important;
+}
+body.light-theme .text-gray-600,
+body.light-theme .text-slate-500,
+body.light-theme .text-slate-600 {
+    color: var(--light-text-muted) !important;
+}
+body.light-theme .text-white {
+    color: #f8fafc !important;
+}
+body.light-theme .text-cyan-300,
+body.light-theme .text-cyan-400 {
+    color: #67c7ee !important;
+}
+body.light-theme .text-emerald-400 {
+    color: #45d4a8 !important;
+}
+body.light-theme .text-amber-300,
+body.light-theme .text-amber-400 {
+    color: #f4c861 !important;
+}
+body.light-theme .text-purple-300,
+body.light-theme .text-purple-400 {
+    color: #bd99ff !important;
+}
+body.light-theme .text-red-400,
+body.light-theme .text-rose-400 {
+    color: #ff6b7a !important;
+}
+
+/* ======================================================================
+   CONTROLES / FILTROS / BARRAS
+   ====================================================================== */
+body.light-theme .bg-gray-800\/80,
+body.light-theme .bg-gray-800\/90,
+body.light-theme .bg-gray-900\/80,
+body.light-theme .bg-gray-900\/40,
+body.light-theme .bg-slate-900\/40 {
+    background-color: rgba(21, 30, 45, 0.88) !important;
+}
+body.light-theme .bg-gray-800 {
+    background-color: #202b3d !important;
+}
+
+body.light-theme .border-gray-700,
+body.light-theme .border-gray-800,
+body.light-theme .border-gray-800\/80,
+body.light-theme .border-gray-800\/40,
+body.light-theme .border-slate-700\/30 {
+    border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+body.light-theme .filter-btn,
+body.light-theme button.bg-gray-800\/80,
+body.light-theme button.bg-gray-800\/90 {
+    background: linear-gradient(145deg, #202b3d, #192333) !important;
+    color: #b8c5d8 !important;
+    border: 1px solid rgba(148, 163, 184, 0.14) !important;
+    box-shadow: 0 5px 12px rgba(2, 6, 15, 0.16);
+}
+body.light-theme .filter-btn:hover,
+body.light-theme button.bg-gray-800\/80:hover,
+body.light-theme button.bg-gray-800\/90:hover {
+    color: #f8fafc !important;
+    border-color: rgba(103, 199, 238, 0.28) !important;
+    transform: translateY(-1px);
+}
+body.light-theme .filter-btn.bg-purple-600,
+body.light-theme button.bg-purple-600 {
+    background: linear-gradient(135deg, #e63946, #b91c2b) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow: 0 7px 18px rgba(230, 57, 70, 0.24), inset 0 1px 0 rgba(255,255,255,0.14);
+}
+
+/* Barra de progreso com aparência metálica. */
+body.light-theme .bg-gray-900\/80 {
+    background: rgba(8, 14, 24, 0.58) !important;
+}
+body.light-theme .bg-gray-800.rounded-full {
+    background: #2a3649 !important;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.22);
+}
+
+/* Inputs / selects */
+body.light-theme input,
+body.light-theme select,
+body.light-theme textarea {
+    background: #151f30 !important;
+    border-color: rgba(148, 163, 184, 0.16) !important;
+    color: #f1f5f9 !important;
+    box-shadow: inset 0 2px 7px rgba(0,0,0,0.14), 0 1px 0 rgba(255,255,255,0.025);
+}
+body.light-theme input::placeholder,
+body.light-theme textarea::placeholder {
+    color: #66758b !important;
+}
+body.light-theme input:focus,
+body.light-theme select:focus,
+body.light-theme textarea:focus {
+    border-color: rgba(103, 199, 238, 0.65) !important;
+    box-shadow: 0 0 0 3px rgba(103, 199, 238, 0.12), 0 8px 20px rgba(0,0,0,0.16);
+    outline: none;
+}
+
+/* Scrollbar */
+body.light-theme ::-webkit-scrollbar-track {
+    background: #101722;
+}
+body.light-theme ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(103,199,238,0.48), rgba(230,57,70,0.42));
+}
+body.light-theme ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(103,199,238,0.72), rgba(230,57,70,0.62));
+}
+
+/* Botón de tema */
+body.light-theme #theme-icon.fa-sun {
+    color: #f5c451;
+    filter: drop-shadow(0 0 8px rgba(242,193,78,0.24));
+}
+
+/* Modales */
+body.light-theme .modal-pop {
+    background: linear-gradient(145deg, #202c40, #151f30);
+    border: 1px solid rgba(103, 199, 238, 0.15);
+    box-shadow: 0 24px 70px rgba(0,0,0,0.42);
+}
+body.light-theme .modal-pop .glass-panel {
+    background: rgba(21, 31, 48, 0.94);
+}
+
+/* Banner de actividad actual: triada rojo + celeste + azul profundo. */
+body.light-theme #live-banner {
+    background: linear-gradient(135deg, rgba(103,199,238,0.12), rgba(230,57,70,0.13)) !important;
+    border-color: rgba(103,199,238,0.36) !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+body.light-theme #live-banner .text-cyan-300 {
+    color: #76d3f4 !important;
+}
+body.light-theme #live-banner .text-white {
+    color: #f8fafc !important;
+}
+
+/* Accent rojo para enlaces / estados interactivos cuando estén presentes. */
+body.light-theme a:hover {
+    color: #ff6876;
+}
+
+/* ==========================================================================
+   ESTILOS GENERALES (modo oscuro por defecto)
+   ========================================================================== */
+
 .glass-panel {
     background: rgba(15, 20, 38, 0.7);
     -webkit-backdrop-filter: blur(16px);
@@ -41,7 +419,6 @@ body.light-theme .task-card {
     border: 1px solid var(--border-purple);
 }
 
-/* Orbes de luz de fondo (Efecto Cósmico) */
 .nebula-orb {
     position: fixed;
     border-radius: 50%;
@@ -72,9 +449,8 @@ body.light-theme .task-card {
     left: 45%;
 }
 
-/* Tarjetas de actividades */
 .task-card {
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     background: rgba(15, 20, 38, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -83,15 +459,37 @@ body.light-theme .task-card {
     box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.25);
     border-color: rgba(139, 92, 246, 0.4);
 }
+
 .task-card.completed {
-    opacity: 0.55;
-    filter: grayscale(0.4);
-}
-.task-card.completed .task-title {
-    text-decoration: line-through;
+    opacity: 0.58;
+    filter: grayscale(0.45);
+    transform: scale(0.98);
 }
 
-/* Bordes neón por categoría */
+.task-card.completed .task-title {
+    text-decoration: line-through;
+    text-decoration-color: #10b981;
+}
+
+@keyframes completePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+        transform: scale(1);
+    }
+    40% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        transform: scale(0.98);
+    }
+}
+
+.task-card.just-completed {
+    animation: completePulse 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 .border-neon-cyan { border-left: 4px solid #06b6d4 !important; }
 .border-neon-amber { border-left: 4px solid #f59e0b !important; }
 .border-neon-emerald { border-left: 4px solid #10b981 !important; }
@@ -100,7 +498,6 @@ body.light-theme .task-card {
 .border-neon-rose { border-left: 4px solid #f43f5e !important; }
 .border-neon-pink { border-left: 4px solid #ec4899 !important; }
 
-/* Animaciones de modales */
 @keyframes modalPop {
     from {
         opacity: 0;
@@ -115,12 +512,10 @@ body.light-theme .task-card {
     animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Brillo especial para trofeos */
 .trophy-glow {
     filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
 }
 
-/* Scrollbar personalizado */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;

@@ -44,7 +44,6 @@ function renderSchedule() {
             return matchesCategory && matchesSearch;
         });
 
-        // Aplicar estilo inactivo / plateado si no es el día de hoy
         const dayColumn = document.createElement('div');
         dayColumn.className = `glass-panel rounded-2xl p-3.5 flex flex-col gap-3 min-h-[300px] transition-all ${
             isToday 
@@ -78,10 +77,10 @@ function renderSchedule() {
                 const card = document.createElement('div');
                 const baseColorStyle = colorClasses[task.color] || colorClasses.purple;
                 
-                // Si no es el día de hoy, aplicamos el estilo plateado/bloqueado
                 const lockedStyle = !isToday ? 'filter grayscale contrast-75 opacity-60 cursor-not-allowed bg-slate-900/40 border-slate-700/30 text-slate-400' : baseColorStyle;
 
                 card.className = `task-card p-3 rounded-xl relative group flex flex-col justify-between transition-all ${lockedStyle} ${task.completed ? 'completed' : ''}`;
+                card.dataset.taskId = task.id;
                 
                 card.innerHTML = `
                     <div>
