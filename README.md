@@ -39,17 +39,21 @@ Nebula Time es una aplicación web para la gestión del tiempo y la planificaci�
 
 ```text
 nebulatime/
-├── .gitignore
-├── LICENSE
-├── README.md
-├── index.html
 ├── assets/
-│   └── audio/
+│   ├── audio/
+│   │   ├── ambient/        # Capas de audio para el mezclador de enfoque
+│   │   └── intro-sound.mp3 # Audio de entrada para la intro
+│   ├── icons/
+│   │   ├── icon-192.png
+│   │   └── icon-512.png
+│   └── video/
+│       └── intro.mp4       # Video de fondo para el Splash Screen
 ├── css/
-│   └── styles.css
-└── js/
-    ├── data.js
-    ├── audio.js
-    ├── ui.js
-    └── app.js
-```
+│   └── styles.css          # Estilos personalizados, efectos neón y orbes
+├── js/
+│   ├── app.js             # Controlador principal y eventos
+│   ├── audio.js           # Motor Web Audio API y Mezclador Ambient
+│   ├── data.js            # Persistencia con LocalStorage y appData
+│   └── ui.js              # Renderizado del Grid, Modales, Tablas y Gráficos
+├── index.html             # Interfaz principal de la PWA
+└── manifest.json          # Configuración Web App
