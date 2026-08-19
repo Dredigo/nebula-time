@@ -37,23 +37,38 @@ Nebula Time es una aplicación web para la gestión del tiempo y la planificaci�
 
 ## Estructura del repositorio
 
-```text
+```
 nebulatime/
 ├── assets/
 │   ├── audio/
-│   │   ├── ambient/        # Capas de audio para el mezclador de enfoque
-│   │   └── intro-sound.mp3 # Audio de entrada para la intro
+│   │   ├── ambient/              # Categorías de sonido para el mezclador de enfoque
+│   │   │   ├── ambient_music/
+│   │   │   ├── ambient_sound/
+│   │   │   ├── binaural/
+│   │   │   ├── coffee/
+│   │   │   ├── fire/
+│   │   │   ├── forest/
+│   │   │   ├── guitar/
+│   │   │   ├── lub_dub/
+│   │   │   ├── rain/
+│   │   │   ├── retro/
+│   │   │   ├── sci_fi/
+│   │   │   ├── sea/
+│   │   │   ├── space/
+│   │   │   ├── train/
+│   │   │   └── wind/
+│   │   └── intro-sound.mp3       # Audio de entrada para la intro
 │   ├── icons/
 │   │   ├── icon-192.png
 │   │   └── icon-512.png
 │   └── video/
-│       └── intro.mp4       # Video de fondo para el Splash Screen
+│       └── intro.mp4             # Video de fondo para el Splash Screen
 ├── css/
-│   └── styles.css          # Estilos personalizados, efectos neón y orbes
+│   └── styles.css                # Estilos personalizados, efectos neón y orbes
 ├── js/
-│   ├── app.js             # Controlador principal y eventos
-│   ├── audio.js           # Motor Web Audio API y Mezclador Ambient
-│   ├── data.js            # Persistencia con LocalStorage y appData
-│   └── ui.js              # Renderizado del Grid, Modales, Tablas y Gráficos
-├── index.html             # Interfaz principal de la PWA
-└── manifest.json          # Configuración Web App
+│   ├── app.js                    # Controlador principal y eventos
+│   ├── audio.js                  # Motor Web Audio API y Mezclador Ambient
+│   ├── data.js                   # Persistencia con LocalStorage y appData
+│   └── ui.js                     # Renderizado del Grid, Modales, Tablas y Gráficos
+├── index.html                    # Interfaz principal de la PWA
+└── manifest.json                 # Configuración Web App
