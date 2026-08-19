@@ -42,21 +42,21 @@ nebulatime/
 ├── assets/
 │   ├── audio/
 │   │   ├── ambient/              # Categorías de sonido para el mezclador de enfoque
-│   │   │   ├── ambient_music/
-│   │   │   ├── ambient_sound/
-│   │   │   ├── binaural/
-│   │   │   ├── coffee/
-│   │   │   ├── fire/
-│   │   │   ├── forest/
-│   │   │   ├── guitar/
-│   │   │   ├── lub_dub/
-│   │   │   ├── rain/
-│   │   │   ├── retro/
-│   │   │   ├── sci_fi/
-│   │   │   ├── sea/
-│   │   │   ├── space/
-│   │   │   ├── train/
-│   │   │   └── wind/
+│   │   ├── ambient_music/
+│   │   ├── ambient_sound/
+│   │   ├── binaural/
+│   │   ├── coffee/
+│   │   ├── fire/
+│   │   ├── forest/
+│   │   ├── guitar/
+│   │   ├── lub_dub/
+│   │   ├── rain/
+│   │   ├── retro/
+│   │   ├── sci_fi/
+│   │   ├── sea/
+│   │   ├── space/
+│   │   ├── train/
+│   │   ├── wind/
 │   │   └── intro-sound.mp3       # Audio de entrada para la intro
 │   ├── icons/
 │   │   ├── icon-192.png
