@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nebula Time — Planificador Ultra Pro</title>
 
+    <!-- Archivo Manifest para PWA -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Color de la barra de estado del navegador/pantalla en Android -->
+    <meta name="theme-color" content="#0f172a">
+
+    <!-- Ícono de acceso directo general/favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icons/icon-512.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome 6 Icons -->
@@ -64,6 +74,47 @@
 </head>
 <body class="relative flex flex-col justify-between pb-10 select-none">
 
+    <!-- Splash Screen Estilo Netflix Interactivo -->
+    <div id="splash-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 transition-opacity duration-700 overflow-hidden cursor-pointer" onclick="startNebulaExperience()">
+        
+        <!-- Video de Presentación -->
+        <video id="splash-video" class="absolute inset-0 w-full h-full object-cover object-[center_35%] opacity-0 transition-opacity duration-500 pointer-events-none" playsinline>
+            <source src="assets/video/intro.mp4" type="video/mp4">
+        </video>
+
+        <!-- Overlay Gradiente Oscuro -->
+        <div id="splash-overlay" class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 opacity-0 transition-opacity duration-500 pointer-events-none"></div>
+
+        <!-- Audio de Entrada -->
+        <audio id="intro-audio" preload="auto">
+            <source src="assets/audio/intro-sound.mp3" type="audio/mpeg">
+        </audio>
+
+        <!-- Capa de UI (Logo + Título + Botón) -->
+        <div class="relative z-20 flex flex-col items-center text-center px-4">
+            
+            <!-- Identidad (Permanece visible durante la reproducción) -->
+            <div id="splash-brand" class="flex flex-col items-center transition-all duration-500">
+                <div class="w-24 h-24 mb-4 rounded-full bg-gradient-to-tr from-cyan-500 via-purple-600 to-pink-500 p-1 shadow-[0_0_50px_rgba(139,92,246,0.8)] flex items-center justify-center">
+                    <img src="assets/icons/icon-512.png" alt="Nebula Logo" class="w-full h-full object-cover rounded-full">
+                </div>
+                
+                <h2 class="text-3xl font-black text-white font-display tracking-tight bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 bg-clip-text text-transparent drop-shadow-lg mb-4">
+                    Nebula Time
+                </h2>
+            </div>
+            
+            <!-- Botón de Inicio (Se oculta al hacer clic) -->
+            <div id="splash-btn-trigger" class="transition-opacity duration-300">
+                <span class="text-xs px-5 py-2.5 rounded-full bg-purple-600/50 border border-purple-400/60 text-cyan-200 font-bold tracking-wider uppercase shadow-[0_0_20px_rgba(168,85,247,0.4)] backdrop-blur-md animate-pulse">
+                    <i class="fa-solid fa-play mr-1.5"></i> Toca para iniciar
+                </span>
+            </div>
+
+        </div>
+
+    </div>
+
     <!-- Ambient Cosmic Background Orbs -->
     <div class="nebula-orb orb-1"></div>
     <div class="nebula-orb orb-2"></div>
@@ -76,23 +127,18 @@
             <!-- Logo Nebula Time & Reloj -->
             <div class="flex items-center gap-3.5 w-full lg:w-auto justify-between lg:justify-start">
                 <div class="flex items-center gap-3">
-                    <div class="relative flex items-center justify-center p-2.5 bg-gradient-to-tr from-purple-900/80 via-indigo-900/90 to-cyan-900/80 rounded-2xl border border-purple-500/40 shadow-lg shadow-purple-500/20 group cursor-pointer" onclick="triggerNebulaEffect()">
-                        <svg class="w-8 h-8 text-cyan-400 animation-spin-slow group-hover:scale-110 transition-transform" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                                <linearGradient id="nebulaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#06b6d4" />
-                                    <stop offset="50%" stop-color="#8b5cf6" />
-                                    <stop offset="100%" stop-color="#ec4899" />
-                                </linearGradient>
-                            </defs>
-                            <circle cx="50" cy="50" r="42" stroke="url(#nebulaGrad)" stroke-width="4" stroke-dasharray="10 6" class="animate-spin-slow" />
-                            <circle cx="50" cy="50" r="28" stroke="url(#nebulaGrad)" stroke-width="3" opacity="0.7" />
-                            <circle cx="50" cy="50" r="10" fill="url(#nebulaGrad)" class="animate-pulse" />
-                            <path d="M50 15 L50 25 M50 75 L50 85 M15 50 L25 50 M75 50 L85 50" stroke="#06b6d4" stroke-width="3" stroke-linecap="round"/>
-                        </svg>
-                        <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                    
+                    <!-- Tarjeta del Logo Nebula Time -->
+                    <div class="relative flex items-center justify-center p-2.5 bg-gradient-to-b from-purple-900/80 via-indigo-900/90 to-slate-900 rounded-2xl border border-purple-500/40 shadow-lg shadow-purple-500/20 group cursor-pointer" onclick="triggerNebulaEffect()">
+                        
+                        <div class="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center border border-cyan-500/40 shadow-inner">
+                            <img src="assets/icons/icon-512.png" alt="Nebula Time Logo" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                        </div>
+
+                        <!-- Punto pulsante de notificación -->
+                        <span class="absolute -top-1 -right-1 flex h-3.5 w-3.5 z-20">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                          <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-500"></span>
                         </span>
                     </div>
 

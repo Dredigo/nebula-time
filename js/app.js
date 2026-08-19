@@ -1,10 +1,11 @@
 /* ==========================================================================
-   Nebula Time — Main Controller (Con Validación de Día y Modales Blindados)
+   Nebula Time — Main Controller (Con Validación de Día, Splash Netflix e Interacción)
    ========================================================================== */
 
 let pomodoroTimer = null;
 let pomodoroSecondsLeft = 25 * 60;
 let isPomodoroRunning = false;
+let splashStarted = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     initClock();
@@ -12,6 +13,64 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLiveBanner();
     setInterval(updateLiveBanner, 30000);
 });
+
+/* --- Intro estilo Netflix Interactivable (Garantiza Sonido y Marca Visible) --- */
+
+function startNebulaExperience() {
+    if (splashStarted) return;
+    splashStarted = true;
+
+    const splash = document.getElementById('splash-screen');
+    const video = document.getElementById('splash-video');
+    const overlay = document.getElementById('splash-overlay');
+    const audio = document.getElementById('intro-audio');
+    const btnTrigger = document.getElementById('splash-btn-trigger');
+
+    // 1. Ocultar únicamente el botón "Toca para iniciar"
+    if (btnTrigger) {
+        btnTrigger.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    // 2. Desbloquear y reproducir el audio con volumen al máximo
+    if (audio) {
+        audio.volume = 1.0;
+        audio.currentTime = 0;
+        audio.play().catch(err => console.log("Error al reproducir audio:", err));
+    }
+
+    // 3. Encender y reproducir el video cinemático
+    if (video) {
+        video.classList.remove('opacity-0');
+        video.playbackRate = 1.0;
+        video.currentTime = 0;
+        video.play().catch(err => console.log("Error al reproducir video:", err));
+
+        video.addEventListener('timeupdate', () => {
+            if (video.duration && (video.duration - video.currentTime <= 0.4)) {
+                hideSplash();
+            }
+        });
+
+        video.onended = () => hideSplash();
+    }
+
+    if (overlay) overlay.classList.remove('opacity-0');
+
+    // Fallback de tiempo máximo por si el video no dispara evento de fin
+    const timeoutId = setTimeout(() => {
+        hideSplash();
+    }, 4500);
+
+    function hideSplash() {
+        clearTimeout(timeoutId);
+        if (!splash || splash.classList.contains('opacity-0')) return;
+        
+        splash.classList.add('opacity-0');
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 700);
+    }
+}
 
 /* --- Reloj e Indicadores --- */
 
@@ -83,11 +142,10 @@ function updateLiveBanner() {
     }
 }
 
-/* --- Gestión de Tareas con Bloqueo y Blindaje de Modales --- */
+/* --- Gestión de Tareas --- */
 
 function toggleTaskComplete(dayKey, taskId) {
     const todayKey = getTodayDayName();
-    // Bloqueo de seguridad: Evita la ejecución si el día no coincide con la fecha de hoy
     if (dayKey !== todayKey) {
         showCustomDialog('Día Bloqueado', 'Sólo podés tildar o destildar las actividades del día de hoy.');
         return;
@@ -136,10 +194,7 @@ function openTaskModalForDay(dayKey) {
     const form = document.getElementById('task-form');
     const formDay = document.getElementById('form-day');
 
-    if (!modal) {
-        console.error("No se encontró el elemento #task-modal en el DOM.");
-        return;
-    }
+    if (!modal) return;
 
     if (title) title.innerText = 'Nueva Actividad';
     if (form) form.reset();
